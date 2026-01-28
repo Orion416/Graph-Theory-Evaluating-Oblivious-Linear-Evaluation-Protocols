@@ -1,0 +1,146 @@
+# =============================================================================
+# OT Baseline Protocol Parameters for Comparison
+# =============================================================================
+# These parameters define OT-based approaches for implementing OLE to serve
+# as baseline comparisons. OLE can be constructed from OT via standard
+# reductions, requiring field_bits OTs per OLE.
+#
+# See REFERENCES.md for complete academic citations.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Common Parameters
+# -----------------------------------------------------------------------------
+common_parameters:
+  field_bits: 128
+  field_bits_reference: "Standard 128-bit security parameter"
+
+  ec_point_bytes: 32
+  ec_point_bytes_reference: |
+    Compressed elliptic curve point size for Curve25519 or P-256.
+    Reference: [Curve25519] D.J. Bernstein, PKC 2006
+
+# -----------------------------------------------------------------------------
+# Simplest OT (Diffie-Hellman based)
+# -----------------------------------------------------------------------------
+# Reference: [NP01] M. Naor, B. Pinkas, "Efficient Oblivious Transfer Protocols"
+#            SODA 2001, pp. 448-457
+#
+# This is the baseline "textbook" OT protocol based on Diffie-Hellman.
+# While simple, it requires expensive public-key operations per OT.
+# -----------------------------------------------------------------------------
+Simplest_OT:
+  name: "Simplest OT"
+  type: "OT"
+
+  # Communication per OT: 2 EC points (sender's two messages)
+  comm_per_ot_bytes: 64
+  comm_per_ot_reference: "[NP01] Section 3"
+  comm_per_ot_rationale: |
+    Sender transmits 2 encrypted messages, each requiring 1 EC point
+    for Diffie-Hellman key derivation. 2 * 32 bytes = 64 bytes per OT.
+
+  # Computation per OT: 2 EC scalar multiplications
+  comp_per_ot_aes_equiv: 4000
+  comp_per_ot_reference: "[NP01] Section 3, combined with EC benchmarks"
+  comp_per_ot_rationale: |
+    Receiver performs 1 EC scalar multiplication for choice.
+    Sender performs 2 EC scalar multiplications for two messages.
+    Total: ~3 EC muls, but pipelining allows ~2 effective muls.
+    At 2000 AES-eq per EC mul: 4000 AES-eq per OT.
+
+  rounds: 2
+  rounds_reference: "[NP01] Figure 1"
+  rounds_rationale: "1 round for receiver's choice, 1 round for sender's response"
+
+  color: "#E07A5F"
+
+# -----------------------------------------------------------------------------
+# IKNP OT Extension
+# -----------------------------------------------------------------------------
+# Reference: [IKNP03] Y. Ishai, J. Kilian, K. Nissim, E. Petrank,
+#            "Extending Oblivious Transfers Efficiently"
+#            CRYPTO 2003, LNCS 2729, pp. 145-161
+#
+# OT extension allows generating many OTs from few base OTs using only
+# symmetric-key operations. This dramatically reduces the amortized cost.
+# -----------------------------------------------------------------------------
+IKNP_OT:
+  name: "IKNP OT"
+  type: "OT"
+
+  # After base OT setup (amortized), communication per extended OT
+  bits_per_extended_ot: 64
+  bits_per_extended_ot_reference: "[IKNP03] Theorem 1"
+  bits_per_extended_ot_rationale: |
+    IKNP extension transmits approximately k bits per extended OT,
+    where k is the security parameter. For k=128, using correlation
+    robustness, effective transmission is ~64 bits per OT after
+    accounting for the matrix transpose optimization.
+
+  # Computation: dominated by hash operations
+  hash_ops_per_ot: 2
+  hash_ops_per_ot_reference: "[IKNP03] Protocol 1"
+  hash_ops_per_ot_rationale: |
+    Each extended OT requires:
+    - Sender: 2 hash calls (for two possible messages)
+    - Receiver: 1 hash call (for chosen message)
+    Average: ~2 hash calls per OT.
+
+  rounds: 4
+  rounds_reference: "[IKNP03] Section 3"
+  rounds_rationale: |
+    Round 1-2: Base OT setup (using Simplest OT or similar)
+    Round 3: Matrix exchange for extension
+    Round 4: Extended OT execution
+
+  color: "#E07A5F"
+
+# -----------------------------------------------------------------------------
+# Silent OT (PCG-based)
+# -----------------------------------------------------------------------------
+# Reference: [BCG+19] E. Boyle, G. Couteau, N. Gilboa, Y. Ishai, L. Kohl, P. Scholl
+#            "Efficient Pseudorandom Correlation Generators: Silent OT
+#            Extension and More"
+#            CRYPTO 2019, LNCS 11694, pp. 489-518
+#
+# Silent OT achieves sublinear communication by using pseudorandom
+# correlation generators based on the LPN assumption.
+# -----------------------------------------------------------------------------
+Silent_OT:
+  name: "Silent OT"
+  type: "OT"
+
+  # Sublinear communication: seed exchange + sqrt(N) hints
+  seed_bits: 128
+  seed_bits_reference: "[BCG+19] Section 4"
+  seed_bits_rationale: "Seed size equals security parameter"
+
+  # Communication scaling behavior
+  scaling: "sublinear"
+  scaling_reference: "[BCG+19] Theorem 4.1"
+  scaling_rationale: |
+    Communication complexity: O(lambda + sqrt(N) * k)
+    Where lambda=128 (security parameter), k=128 (field bits), N=number of OTs.
+    Sublinear in N due to LPN-based compression.
+
+  # PRG expansion cost
+  prg_ops_per_output: 10
+  prg_ops_per_output_reference: "[BCG+19] Section 4.3"
+  prg_ops_per_output_rationale: |
+    Local expansion using AES-CTR PRG:
+    - ~log(N) AES operations per output for tree-based expansion
+    - Additional LPN decoding overhead
+    Conservative estimate of 10 AES-equivalent ops per output.
+
+  rounds: 8
+  rounds_reference: "[BCG+19] Protocol 4.2"
+  rounds_rationale: |
+    Higher round complexity due to:
+    - Seed commitment (2 rounds)
+    - Seed exchange (2 rounds)
+    - LPN hint exchange (2 rounds)
+    - Verification (2 rounds)
+    Trade-off: More rounds for less communication.
+
+  color: "#E07A5F"

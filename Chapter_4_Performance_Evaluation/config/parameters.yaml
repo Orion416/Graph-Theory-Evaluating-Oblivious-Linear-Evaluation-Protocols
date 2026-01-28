@@ -1,0 +1,225 @@
+# =============================================================================
+# OLE Protocol Performance Evaluation Framework - Configuration File
+# =============================================================================
+# This file contains all configurable parameters for the evaluation framework.
+# All parameters are derived from published academic literature or standard
+# cryptographic assumptions. See REFERENCES.md for complete citations.
+#
+# IMPORTANT: This is a THEORETICAL PERFORMANCE PREDICTION framework based on
+# complexity models, NOT an empirical measurement system. All performance
+# values are COMPUTED from theoretical models, not measured from actual
+# protocol implementations.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Framework Metadata
+# -----------------------------------------------------------------------------
+framework:
+  name: "OLE Protocol Performance Prediction Framework"
+  version: "1.0.0"
+  type: "theoretical_model"  # Explicitly states this is NOT empirical data
+  disclaimer: |
+    All performance values in this framework are PREDICTIONS based on
+    theoretical complexity models derived from cryptographic parameters.
+    They are NOT measurements from actual protocol implementations.
+    For empirical validation, real protocol implementations should be tested.
+
+# -----------------------------------------------------------------------------
+# Random Seed Configuration
+# -----------------------------------------------------------------------------
+# Controls the reproducibility of simulation results.
+# - "fixed": Uses fixed_value for deterministic results
+# - "time_based": Uses current timestamp for varying results
+# - "configurable": Allows command-line override with --seed argument
+random_seed:
+  mode: "configurable"
+  fixed_value: 42
+  description: |
+    Random seed controls the Monte Carlo simulation noise.
+    Fixed seed ensures reproducible results for verification.
+    Time-based seed provides variation across runs.
+
+# -----------------------------------------------------------------------------
+# Experiment Configuration
+# -----------------------------------------------------------------------------
+experiment:
+  # Problem scales as exponents of 2 (N = 2^scale)
+  # These scales cover typical secure computation scenarios from small
+  # (2^10 = 1024) to large (2^20 = 1M) OLE instances.
+  # Reference: Common benchmarking scales in MPC literature
+  problem_scales: [10, 12, 14, 16, 18, 20]
+
+  # Security parameters (bits)
+  # Reference: NIST SP 800-57 Part 1 Rev. 5 (2020)
+  # 128-bit computational security is the current standard for most applications
+  security_parameter: 128
+
+  # Statistical security parameter
+  # Reference: Standard practice in MPC protocols
+  # 40 bits provides 2^(-40) statistical error probability
+  statistical_security: 40
+
+  # Monte Carlo simulation parameters
+  # 100 trials provides approximately 10% relative error at 95% confidence
+  num_trials: 100
+
+  # Confidence level for interval estimation
+  # Reference: Standard statistical practice
+  confidence_level: 0.95
+
+# -----------------------------------------------------------------------------
+# Network Conditions for Generalization Testing
+# -----------------------------------------------------------------------------
+# These represent standard network scenarios for performance modeling.
+# Values are based on typical measurements from cloud computing and
+# distributed systems literature.
+# Reference: AWS/Azure/GCP network performance documentation
+network_conditions:
+  - name: "LAN"
+    bandwidth_mbps: 1000.0
+    latency_ms: 0.1
+    description: "Local Area Network (data center, same rack)"
+    reference: "Typical 1Gbps Ethernet with sub-millisecond latency"
+
+  - name: "MAN"
+    bandwidth_mbps: 100.0
+    latency_ms: 5.0
+    description: "Metropolitan Area Network (same city/region)"
+    reference: "Typical inter-datacenter connection within region"
+
+  - name: "WAN"
+    bandwidth_mbps: 10.0
+    latency_ms: 50.0
+    description: "Wide Area Network (cross-region, continental)"
+    reference: "Typical cross-region cloud connection"
+
+  - name: "Constrained"
+    bandwidth_mbps: 1.0
+    latency_ms: 100.0
+    description: "Constrained network (mobile, IoT, intercontinental)"
+    reference: "Conservative estimate for bandwidth-limited scenarios"
+
+# -----------------------------------------------------------------------------
+# Evaluation Weight Configurations
+# -----------------------------------------------------------------------------
+# Weights determine the relative importance of each performance dimension
+# in the comprehensive score calculation. Weights must sum to 1.0.
+#
+# Each configuration represents a different application priority:
+# - Baseline: General-purpose balanced evaluation
+# - Comm.-Priority: For bandwidth-constrained environments
+# - Comp.-Priority: For CPU-limited or real-time applications
+# - Balanced: Equal weight when no factor dominates
+# - Security-Priority: For high-security applications
+weight_configs:
+  Baseline:
+    communication: 0.35
+    rounds: 0.20
+    computation: 0.25
+    security: 0.20
+    description: "General-purpose balanced evaluation"
+    rationale: |
+      Communication weighted highest (0.35) as it is often the primary
+      bottleneck in distributed secure computation. This reflects the
+      common observation that network bandwidth is more constrained than
+      computational resources in typical deployment scenarios.
+
+  Comm.-Priority:
+    communication: 0.50
+    rounds: 0.15
+    computation: 0.20
+    security: 0.15
+    description: "Communication-constrained scenarios"
+    rationale: |
+      For bandwidth-limited environments such as mobile networks, IoT
+      deployments, or cross-continental communication where minimizing
+      data transfer is the primary optimization target.
+
+  Comp.-Priority:
+    communication: 0.25
+    rounds: 0.15
+    computation: 0.45
+    security: 0.15
+    description: "Computation-constrained scenarios"
+    rationale: |
+      For CPU-limited environments such as embedded systems, real-time
+      applications, or scenarios where computational cost directly
+      translates to monetary cost (e.g., cloud computing billing).
+
+  Balanced:
+    communication: 0.25
+    rounds: 0.25
+    computation: 0.25
+    security: 0.25
+    description: "Equal weight evaluation"
+    rationale: |
+      When no single performance factor clearly dominates the requirements,
+      equal weighting provides an unbiased comparison across all dimensions.
+
+  Security-Priority:
+    communication: 0.25
+    rounds: 0.15
+    computation: 0.20
+    security: 0.40
+    description: "High-security scenarios"
+    rationale: |
+      For applications with stringent security requirements where the
+      security margin and assumption strength are critical factors,
+      such as financial or governmental applications.
+
+# -----------------------------------------------------------------------------
+# Application Simulation Parameters
+# -----------------------------------------------------------------------------
+# Parameters for simulating application-level performance (Table 17).
+# These model a secure linear regression application scenario.
+application_simulation:
+  # Reference network for application testing
+  reference_bandwidth_mbps: 100.0
+  reference_latency_ms: 5.0
+
+  # Execution time variance (relative standard deviation)
+  # Based on typical implementation variance in secure computation frameworks
+  execution_variance: 0.05
+
+  description: |
+    These parameters simulate application-level execution time for
+    a secure linear regression workload. The execution time model
+    combines communication time, round-trip latency, and computation
+    time based on the protocol's complexity characteristics.
+
+# -----------------------------------------------------------------------------
+# Hypothetical Environment Configuration
+# -----------------------------------------------------------------------------
+# These specifications describe a HYPOTHETICAL reference computing environment
+# for theoretical analysis. They are NOT measurements from actual hardware.
+hypothetical_environment:
+  disclaimer: |
+    IMPORTANT: The following hardware specifications are HYPOTHETICAL
+    reference values used for theoretical performance modeling. They do
+    NOT represent an actual experimental setup or measured hardware.
+
+  processor:
+    model: "Intel Xeon E5-2697 v4 (hypothetical reference)"
+    clock_frequency: "2.3 GHz"
+    physical_cores: 18
+
+  memory:
+    capacity: "256 GB DDR4"
+
+  network:
+    bandwidth: "10 Gbps (configurable)"
+    latency_range: "0.1 ms - 100 ms"
+
+  operating_system:
+    distribution: "Ubuntu 22.04 LTS"
+
+  cryptographic_libraries:
+    - name: "MP-SPDZ"
+      version: "0.3.6"
+      reference: "https://github.com/data61/MP-SPDZ"
+    - name: "OpenSSL"
+      version: "3.0.2"
+      reference: "https://www.openssl.org/"
+    - name: "OpenFHE"
+      version: "1.1.2"
+      reference: "https://www.openfhe.org/"

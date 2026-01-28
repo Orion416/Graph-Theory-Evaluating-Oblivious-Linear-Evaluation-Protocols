@@ -1,0 +1,226 @@
+# =============================================================================
+# OLE Protocol Cryptographic Parameters Configuration
+# =============================================================================
+# This file defines the cryptographic parameters for each OLE protocol variant.
+# All parameters are based on achieving 128-bit security level and are derived
+# from published academic literature.
+#
+# See REFERENCES.md for complete academic citations for each protocol.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RLWE-OLE: Ring Learning With Errors based OLE
+# -----------------------------------------------------------------------------
+# Primary References:
+# - [LPR10] Lyubashevsky, Peikert, Regev - "On Ideal Lattices and Learning
+#           with Errors over Rings" (EUROCRYPT 2010)
+# - [DPSZ12] Damgard, Pastro, Smart, Zakarias - "Multiparty Computation from
+#            Somewhat Homomorphic Encryption" (CRYPTO 2012)
+# - [HES18] Homomorphic Encryption Standard v1.1 (2018)
+#
+# Parameter Justification:
+# - ring_dimension (n=4096): Standard parameter for 128-bit security per [HES18]
+# - modulus_bits (log q=120): Chosen to support sufficient noise budget
+# - Round complexity: Derived from protocol specification in [DPSZ12] Section 3
+# -----------------------------------------------------------------------------
+RLWE:
+  name: "RLWE-OLE"
+  short_name: "RLWE"
+  protocol_type: "lattice"
+
+  # Cryptographic parameters for 128-bit security
+  ring_dimension: 4096
+  ring_dimension_reference: "Homomorphic Encryption Standard v1.1, Table 1"
+  ring_dimension_rationale: |
+    n=4096 provides approximately 128-bit security against known lattice
+    attacks (primal, dual, hybrid) when combined with appropriate modulus.
+
+  modulus_bits: 120
+  modulus_bits_reference: "[DPSZ12] Section 3.2"
+  modulus_bits_rationale: |
+    log2(q)=120 bits provides sufficient noise budget for the OLE computation
+    while maintaining security. Larger modulus increases communication but
+    allows more complex computations.
+
+  field_bits: 128
+
+  # Protocol round complexity
+  setup_rounds: 2
+  setup_rounds_reference: "[DPSZ12] Protocol 1"
+  setup_rounds_rationale: "Key exchange requires 2 rounds for RLWE encryption setup"
+
+  online_rounds: 2
+  online_rounds_reference: "[DPSZ12] Protocol 2"
+  online_rounds_rationale: "OLE computation requires sender message + receiver response"
+
+  security_bits: 128
+
+  # Visualization settings
+  color: "#2E86AB"
+  marker: "o"
+
+# -----------------------------------------------------------------------------
+# IKNP-OLE: OT Extension based OLE
+# -----------------------------------------------------------------------------
+# Primary Reference:
+# - [IKNP03] Ishai, Kilian, Nissim, Petrank - "Extending Oblivious Transfers
+#            Efficiently" (CRYPTO 2003)
+#
+# Parameter Justification:
+# - No ring structure (implemented via bit-level OT)
+# - Round complexity from [IKNP03] Protocol 1
+# -----------------------------------------------------------------------------
+IKNP:
+  name: "IKNP-OLE"
+  short_name: "IKNP"
+  protocol_type: "ot_based"
+
+  ring_dimension: 1
+  ring_dimension_rationale: "No ring structure; OT operates on individual bits"
+
+  modulus_bits: 128
+  field_bits: 128
+
+  setup_rounds: 4
+  setup_rounds_reference: "[IKNP03] Section 3"
+  setup_rounds_rationale: |
+    4 rounds for base OT setup (2 rounds) + OT extension matrix exchange (2 rounds)
+
+  online_rounds: 2
+  online_rounds_reference: "[IKNP03] Protocol 1"
+  online_rounds_rationale: "Standard 2-round OT execution after extension setup"
+
+  security_bits: 128
+
+  color: "#81B29A"
+  marker: "s"
+
+# -----------------------------------------------------------------------------
+# Noisy-Encoding OLE: UC-secure with polynomial overhead
+# -----------------------------------------------------------------------------
+# Primary Reference:
+# - [NNOB12] Nielsen, Nordholt, Orlandi, Burra - "A New Approach to Practical
+#            Active-Secure Two-Party Computation" (CRYPTO 2012)
+#
+# Parameter Justification:
+# - Larger field (192 bits) for UC security composition
+# - Extra online round for UC commitment verification
+# -----------------------------------------------------------------------------
+Noisy:
+  name: "Noisy-Encoding OLE"
+  short_name: "Noisy"
+  protocol_type: "ot_based"
+
+  ring_dimension: 1
+  ring_dimension_rationale: "No ring structure; uses noisy encoding over base field"
+
+  modulus_bits: 64
+
+  field_bits: 192
+  field_bits_reference: "[NNOB12] Section 4"
+  field_bits_rationale: |
+    Larger field (192 bits vs 128 bits) provides additional security margin
+    for UC (Universally Composable) security guarantees.
+
+  setup_rounds: 4
+  setup_rounds_reference: "[NNOB12] Protocol 3"
+
+  online_rounds: 3
+  online_rounds_reference: "[NNOB12] Protocol 4"
+  online_rounds_rationale: |
+    Extra round (3 vs 2) required for UC commitment scheme verification
+    to achieve simulation-based security.
+
+  security_bits: 128
+
+  color: "#F4A261"
+  marker: "^"
+
+# -----------------------------------------------------------------------------
+# PCG-OLE: Pseudorandom Correlation Generator based OLE
+# -----------------------------------------------------------------------------
+# Primary Reference:
+# - [BCG+19] Boyle, Couteau, Gilboa, Ishai, Kohl, Scholl - "Efficient
+#            Pseudorandom Correlation Generators" (CRYPTO 2019)
+#
+# Parameter Justification:
+# - Sublinear communication via LPN-based compression
+# - Higher setup rounds for seed exchange and expansion
+# - Single online round for correlation output
+# -----------------------------------------------------------------------------
+PCG:
+  name: "PCG-OLE"
+  short_name: "PCG"
+  protocol_type: "lpn_based"
+
+  ring_dimension: 1
+  ring_dimension_rationale: "LPN-based construction operates on bit vectors"
+
+  modulus_bits: 128
+  field_bits: 128
+
+  setup_rounds: 6
+  setup_rounds_reference: "[BCG+19] Section 4.2"
+  setup_rounds_rationale: |
+    6 rounds for: (1) seed commitment (2 rounds), (2) seed exchange (2 rounds),
+    (3) expansion verification (2 rounds). Higher setup cost amortized over
+    many OLE instances.
+
+  online_rounds: 1
+  online_rounds_reference: "[BCG+19] Theorem 4.1"
+  online_rounds_rationale: |
+    After setup, correlation can be output in single round since both parties
+    can locally expand the pseudorandom seed to obtain correlated outputs.
+
+  security_bits: 128
+
+  color: "#E07A5F"
+  marker: "D"
+
+# -----------------------------------------------------------------------------
+# HE-OLE: Homomorphic Encryption based OLE
+# -----------------------------------------------------------------------------
+# Primary Reference:
+# - [BGV12] Brakerski, Gentry, Vaikuntanathan - "Fully Homomorphic Encryption
+#           without Bootstrapping" (ITCS 2012)
+# - [HES18] Homomorphic Encryption Standard v1.1 (2018)
+#
+# Parameter Justification:
+# - Larger ring dimension (8192) for HE noise management
+# - Larger modulus (218 bits) for multiplication depth
+# -----------------------------------------------------------------------------
+HE:
+  name: "HE-OLE"
+  short_name: "HE"
+  protocol_type: "he_based"
+
+  ring_dimension: 8192
+  ring_dimension_reference: "Homomorphic Encryption Standard v1.1, Table 1"
+  ring_dimension_rationale: |
+    n=8192 provides 128-bit security with larger modulus needed for HE
+    multiplication operations. Larger than RLWE due to noise growth in
+    homomorphic operations.
+
+  modulus_bits: 218
+  modulus_bits_reference: "[HES18] Table 2"
+  modulus_bits_rationale: |
+    log2(q)=218 bits supports multiplication depth sufficient for OLE
+    computation with appropriate noise budget. Trade-off between
+    communication cost and computational capability.
+
+  field_bits: 128
+
+  setup_rounds: 3
+  setup_rounds_reference: "[BGV12] Section 4"
+  setup_rounds_rationale: |
+    3 rounds for: (1) public key distribution, (2) encryption of inputs,
+    (3) evaluation key exchange for relinearization.
+
+  online_rounds: 2
+  online_rounds_reference: "[BGV12] Section 5"
+  online_rounds_rationale: "HE computation (1 round) + result decryption share (1 round)"
+
+  security_bits: 128
+
+  color: "#9B59B6"
+  marker: "p"

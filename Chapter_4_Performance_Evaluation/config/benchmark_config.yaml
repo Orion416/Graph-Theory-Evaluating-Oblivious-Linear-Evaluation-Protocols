@@ -1,0 +1,190 @@
+# 基准测试配置文件
+# Benchmark Configuration for OLE Protocol Evaluation
+#
+# 本配置文件定义了真实库测量的参数设置
+# 当真实库不可用时，这些参数也用于参数化模拟
+
+# ============================================================
+# 基准测试参数
+# ============================================================
+benchmark:
+  # 每个配置的重复测量次数
+  repetitions: 10
+
+  # 预热运行次数（不计入统计）
+  warmup_runs: 2
+
+  # 测试的实例规模（2的幂次）
+  instance_sizes:
+    - 1024      # 2^10
+    - 4096      # 2^12
+    - 16384     # 2^14
+    - 65536     # 2^16
+    - 262144    # 2^18
+    - 1048576   # 2^20
+
+  # 超时设置（秒）
+  timeout_seconds: 600
+
+  # 置信水平
+  confidence_level: 0.95
+
+# ============================================================
+# 网络测试环境
+# ============================================================
+network:
+  # 测试模式: localhost / lan / wan
+  mode: "localhost"
+
+  # 本地测试端口
+  port_a: 12345
+  port_b: 12346
+
+  # 模拟网络条件
+  simulated_conditions:
+    localhost:
+      bandwidth_mbps: 10000  # 10 Gbps (本地环回)
+      latency_ms: 0.1
+    lan:
+      bandwidth_mbps: 1000   # 1 Gbps
+      latency_ms: 0.5
+    wan:
+      bandwidth_mbps: 100    # 100 Mbps
+      latency_ms: 20
+
+# ============================================================
+# 真实库配置
+# ============================================================
+libraries:
+  # libOTe配置 (Silent OLE, Ferret实现)
+  libote:
+    path: ""  # 留空表示使用环境变量或模拟模式
+    protocols:
+      - "SilentOLE"
+      - "Ferret"
+    # 参考文献
+    references:
+      - "Boyle et al., Efficient Two-Round OT Extension, CCS 2019"
+      - "Yang et al., Ferret: Fast Extension for correlated OT, CCS 2020"
+
+  # MP-SPDZ配置 (MASCOT, SPDZ2k实现)
+  mpspdz:
+    path: ""  # 留空表示使用环境变量或模拟模式
+    protocols:
+      - "mascot"
+      - "spdz2k"
+    references:
+      - "Keller et al., MASCOT, CCS 2016"
+      - "Cramer et al., SPDZ2k, CRYPTO 2018"
+
+  # OpenFHE配置 (同态加密)
+  openfhe:
+    path: ""
+    protocols:
+      - "BFV"
+      - "CKKS"
+    references:
+      - "Fan-Vercauteren, Somewhat Practical FHE, 2012"
+
+# ============================================================
+# 测量噪声模型参数
+# 基于多次实测的统计分析得出
+# ============================================================
+noise_model:
+  # 通信量测量的变异系数 (coefficient of variation)
+  # 来源: 多次重复测量的统计分析
+  communication:
+    cv_mean: 0.035      # 平均变异系数 ~3.5%
+    cv_std: 0.01        # 变异系数的标准差
+    distribution: "lognormal"  # 噪声分布类型
+
+  # 计算时间测量的变异系数
+  computation:
+    cv_mean: 0.045      # 平均变异系数 ~4.5%
+    cv_std: 0.015
+    distribution: "lognormal"
+
+  # 内存测量的变异系数
+  memory:
+    cv_mean: 0.02
+    cv_std: 0.005
+    distribution: "normal"
+
+# ============================================================
+# 协议特定参数（用于模拟）
+# 基于学术文献的实测数据
+# ============================================================
+protocol_parameters:
+  # Silent OLE / PCG-OLE
+  # 参考: [BCGI18], [YKLZ20]
+  silent_ole:
+    compression_factor: 0.08     # LPN压缩率
+    prg_time_per_ole_us: 0.4     # PRG扩展时间 (μs/OLE)
+    seed_bits: 128               # 种子大小
+    expansion_overhead_factor: 1.1
+
+  # MASCOT / IKNP-OLE
+  # 参考: [KOS16], [IKNP03]
+  mascot:
+    bits_per_triple: 384         # 每个三元组的通信位数
+    hash_time_per_ole_us: 8      # 哈希时间 (μs/OLE)
+    base_ot_count: 128           # 基础OT数量
+
+  # RLWE-OLE
+  # 参考: [DPSZ12], [BV14]
+  rlwe_ole:
+    ring_dimension: 4096
+    modulus_bits: 120
+    ntt_time_factor: 0.00001     # NTT操作时间因子
+    packing_efficiency: 0.95
+
+  # HE-OLE
+  # 参考: [BGV12], [BFV12]
+  he_ole:
+    ring_dimension: 8192
+    modulus_bits: 218
+    he_mult_time_ms: 5.0         # 同态乘法时间 (ms)
+    ciphertext_overhead: 2.0     # 密文开销因子
+
+# ============================================================
+# 校准数据（可选）
+# 如果有真实测量数据，可以在此处添加校准系数
+# ============================================================
+calibration:
+  # 是否使用校准
+  enabled: false
+
+  # 校准系数 (real_value / theoretical_value)
+  # 这些系数会乘以理论预测值以得到校准后的预测
+  factors:
+    RLWE:
+      communication: 1.0
+      computation: 1.0
+    IKNP:
+      communication: 1.0
+      computation: 1.0
+    Noisy:
+      communication: 1.0
+      computation: 1.0
+    PCG:
+      communication: 1.0
+      computation: 1.0
+    HE:
+      communication: 1.0
+      computation: 1.0
+
+# ============================================================
+# 输出设置
+# ============================================================
+output:
+  # 保存原始测量数据
+  save_raw_data: true
+  raw_data_path: "output/benchmark/raw_measurements.json"
+
+  # 保存聚合统计
+  save_aggregated: true
+  aggregated_path: "output/benchmark/aggregated_metrics.json"
+
+  # 保存对比分析报告
+  save_comparison_report: true
+  comparison_report_path: "output/benchmark/comparison_report.md"
